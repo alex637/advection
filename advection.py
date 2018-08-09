@@ -1,34 +1,33 @@
-# FIXME: redo using numpy
-
-import math
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 # Constants
 NumberOfNodes = 100
 l = 1.0     # speed (lambda in the equation)
-k = 0.4     # TODO!!! - what is this
+k = 0.4     # something
 h = 2 / NumberOfNodes   # step
 tau = k * h / l         # time step
-NumberOfTimeSteps = int(2 / (h * k))
+# NumberOfTimeSteps = int(2 / (h * k))
+NumberOfTimeSteps = 165
 StencilByInterpolationOrder = {1: [-1, 0], 2: [-1, 0, 1], 3: [-2, -1, 0, 1]}
 
 
 def initialize(StartingConfiguration):
+    NextTimeLayer = np.zeros(NumberOfNodes)
     if StartingConfiguration == 'rect':
         # rectangular impulse
-        for i in range(NumberOfNodes):
-            NextTimeLayer[i] = 0.0
-            if NumberOfNodes * 0.25 <= i <= NumberOfNodes * 0.75:
-                CurrentTimeLayer[i] = 1.0
-            else:
-                CurrentTimeLayer[i] = 0.0
+        CurrentTimeLayer = np.zeros(NumberOfNodes)
+        start, finish = np.floor(0.25 * NumberOfNodes), np.floor(0.75 * NumberOfNodes)
+        CurrentTimeLayer[start:finish] = 1.0
+        return CurrentTimeLayer, NextTimeLayer
     elif StartingConfiguration == 'smooth':
         # [sin(pi*x)]^4 on [-1; 1]
+        CurrentTimeLayer = np.empty(NumberOfNodes)
         for i in range(NumberOfNodes):
-            NextTimeLayer[i] = 0.0
             x = -1 + i * h
-            CurrentTimeLayer[i] = math.sin(math.pi * x) ** 4
-
+            CurrentTimeLayer[i] = np.sin(np.pi * x) ** 4
+        return CurrentTimeLayer, NextTimeLayer
     else:
         ErrorMessage = 'Invalid StartingConfiguration parameter'
         print(ErrorMessage)
@@ -88,26 +87,36 @@ def DebugPrint():
 
 
 def DebugPlot():
-    # TODO!!!
-    pass
+    plt.plot(np.linspace(-1, 1, NumberOfNodes), CurrentTimeLayer)
+    plt.xlabel('Coordinate')
+    plt.ylabel('Value')
+    plt.title('Advection')
+    plt.show()
+
 
 # main part
 InterpolationOrder = int(input('InterpolationOrder = '))
 StartingConfiguration = input("Input type of init ('rect' or 'smooth'): ")
-# CurrentTimeLayer = [None for i in range(NumberOfNodes)]
-# NextTimeLayer = [None for i in range(NumberOfNodes)]
+"""
 CurrentTimeLayer = [None] * NumberOfNodes
 NextTimeLayer = [None] * NumberOfNodes
-stencil = StencilByInterpolationOrder[InterpolationOrder]
-# StencilValues = [None for i in range(InterpolationOrder)]
 StencilValues = [None] * (InterpolationOrder + 1)
+"""
+stencil = StencilByInterpolationOrder[InterpolationOrder]
+StencilValues = np.zeros(InterpolationOrder + 1)
 
-initialize(StartingConfiguration)
+CurrentTimeLayer, NextTimeLayer = initialize(StartingConfiguration)
 DebugPrint()
 for step in range(NumberOfTimeSteps):
     SingleStep()
+    """
     if step % 10 == 0 and step > 0:
         print('step is', step)
         DebugPrint()
+    """
+    if step % 50 == 0:
+        DebugPlot()
+
 print('Finished')
 DebugPrint()
+DebugPlot()

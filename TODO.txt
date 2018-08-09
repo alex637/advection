@@ -1,0 +1,5 @@
+1. Negative velocity lamda.
+2. Improved calculations in advection_ext, check for possible improvements in advection.
+3. Add other (higher) interpolation orders.
+4. Return to the tasks and questions in the material given.
+5. Last part of the material.
