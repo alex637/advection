@@ -5,11 +5,10 @@ import numpy as np
 # Constants
 NumberOfNodes = 100
 l = 1.0     # speed (lambda in the equation)
-k = 0.4     # something
+k = 0.4
 h = 2 / NumberOfNodes   # step
 tau = k * h / l         # time step
 NumberOfTimeSteps = int(2 / (h * k))
-# NumberOfTimeSteps = 165
 StencilByInterpolationOrder = {1: [-1, 0], 2: [-1, 0, 1], 3: [-2, -1, 0, 1]}
 
 
@@ -39,42 +38,23 @@ def initialize(StartingConfiguration):
         exit(1)
 
 
-def InterpolateValue(u, du):
-    """ u is an array of values needed for interpolation
-    """
+def InterpolateValueAndDValue(u, du):
     if InterpolationOrder == 3:
-        # Qubic interpolation: y = a * x^3 + b * x^2 + c * x + d
-        a = (du[1] + du[0]) / h**2 - 2 * (u[1] - u[0]) / h**3
-        b = (2 * du[1] + du[0]) / h - 3 * (u[1] - u[0]) / h**2
-        c = du[1]
-        d = u[1]
-        x = -l * tau
-        return a * x ** 3 + b * x ** 2 + c * x + d
-    elif InterpolationOrder == 5:
-        # TODO!!! Now it doesn't work
-        # Quadratic interpolation : y = a * x^2 + b * x + c
-        pass
-    else:
-        ErrorMessage = 'InterpolationOrder should be 3'
-        print(ErrorMessage)
-        exit(1)
-
-
-def InterpolateDValue(u, du):
-    if InterpolationOrder == 3:
-        """ Qubic interpolation: y = a * x^3 + b * x^2 + c * x + d,
-        returning dy = 3 * a * x^2 + 2 * b * x + c
+        """ Qubic interpolation: u = a * x^3 + b * x^2 + c * x + d,
+         du = 3 * a * x^2 + 2 * b * x + c
         """
         a = (du[1] + du[0]) / h**2 - 2 * (u[1] - u[0]) / h**3
         b = (2 * du[1] + du[0]) / h - 3 * (u[1] - u[0]) / h**2
         c = du[1]
         d = u[1]
         x = -l * tau
-        return 3 * a * x**2 + 2 * b * x + c
+        value = a * x ** 3 + b * x ** 2 + c * x + d
+        dvalue =  3 * a * x**2 + 2 * b * x + c
+        return value, dvalue
     else:
         ErrorMessage = 'InterpolationOrder should be 3'
         print(ErrorMessage)
-        exit(1)    
+        exit(1)     
 
 
 def FillStencilValues(index):
@@ -90,8 +70,7 @@ def SingleStep():
     global NextTimeLayer, CurrentTimeLayer, dNextTimeLayer, dCurrentTimeLayer
     for i in range(NumberOfNodes):
         FillStencilValues(i)
-        NextTimeLayer[i] = InterpolateValue(StencilValues, StencilDValues)
-        dNextTimeLayer[i] = InterpolateDValue(StencilValues, StencilDValues)
+        NextTimeLayer[i], dNextTimeLayer[i] = InterpolateValueAndDValue(StencilValues, StencilDValues)
     CurrentTimeLayer, NextTimeLayer = NextTimeLayer, CurrentTimeLayer  # should be working faster then copying
     dCurrentTimeLayer, dNextTimeLayer = dNextTimeLayer, dCurrentTimeLayer
 
@@ -111,6 +90,7 @@ def DebugPlot(info):
     plt.xlabel('Coordinate')
     plt.ylabel('Value')
     plt.title('Advection - '+info)
+    plt.grid(True)
     plt.show()
 
 
@@ -126,12 +106,11 @@ StencilDValues = np.empty(s)
 CurrentTimeLayer, NextTimeLayer, dCurrentTimeLayer, \
     dNextTimeLayer = initialize(StartingConfiguration)
 
-DebugPrint()
+# DebugPrint()
 for step in range(NumberOfTimeSteps):
     SingleStep()
     if step % 50 == 0:
         DebugPlot('step = '+str(step))
 
 print('Finished')
-DebugPrint()
 DebugPlot('Finished')
